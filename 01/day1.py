@@ -1,4 +1,3 @@
-import sys
 import numpy as np
 
 def main(filename, win):
@@ -6,6 +5,7 @@ def main(filename, win):
     return (np.diff(np.convolve(a, np.ones(win), mode="valid")) > 0).sum()
 
 if __name__ == "__main__":
-    filename, win = sys.argv[1], int(sys.argv[2])
-    ret = main(filename, win)
-    print(f"{ret} increasing elements with {win=}") 
+    filename = __file__.replace(".py", ".inp")
+    for win in (1,3):
+        ret = main(filename, win)
+        print(f"{ret} increasing elements with {win=}") 
