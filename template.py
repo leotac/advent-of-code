@@ -1,7 +1,8 @@
-import sys
 
-def main(*args):
-    print(*args)
+def main(filename):
+    pass
 
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+    filename = __file__.replace(".py", ".inp")
+    ret = main(filename)
+    print(f"{ret=}") 
