@@ -21,9 +21,5 @@ if __name__ == "__main__":
     ret = main(filename, cost=lambda i,j : abs(i-j))
     print(f"{ret=}") 
 
-    def gauss(i,j):
-        n = abs(i-j)
-        return int(n*(n+1)/2)
-
-    ret = main(filename, cost=gauss)
+    ret = main(filename, cost=lambda i,j: int(((i-j)**2 + abs(i-j))/2))
     print(f"{ret=}") 
