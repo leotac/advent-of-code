@@ -1,5 +1,4 @@
-
-def main(filename):
+def main1(filename):
     fish = [int(x) for x in open(filename).read().strip().split(",")]
     for i in range(80):
         new = 0
@@ -10,24 +9,6 @@ def main(filename):
                 new += 1
         fish += [8]*new
     return len(fish)
-
-def main1(filename, gen):
-    fish = [int(x) for x in open(filename).read().strip().split(",")]
-
-    pop = [0]*9
-    for f in fish:
-        pop[f] += 1
-
-    for i in range(gen):
-        zeros = pop[0]
-        # shift left
-        for i in range(0,6):
-            pop[i] = pop[i+1]
-        pop[6] = zeros + pop[7]
-        pop[7] = pop[8]
-        pop[8] = zeros
-        
-    return sum(pop)
 
 def main2(filename, gen):
     import numpy as np
