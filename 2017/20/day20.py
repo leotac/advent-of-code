@@ -30,22 +30,22 @@ def tick():
 min_a = min([dist(y) for y in a])
 print([(i,p[i],d[i],v[i],a[i]) for i in range(N) if dist(a[i]) == min_a]) 
 
-destroyed = [False]*N
-
-def collisions():
-    to_destroy = [False]*N
-    for i in range(N):
-        if not destroyed[i]:
-            for j in range(N):
-                if not destroyed[j]:
-                    if dist(p[i],p[j]) == 0:
-                        to_destroy[i] = True
-                        to_destroy[j] = True
-    return to_destroy
-
-T = 100
-for t in range(T):
-    tick()
-    for i in collisions():
-        destroyed[i] = True
-    print sum(1 for x in destroyed if not x)
+#destroyed = [False]*N
+#
+#def collisions():
+#    to_destroy = [False]*N
+#    for i in range(N):
+#        if not destroyed[i]:
+#            for j in range(N):
+#                if not destroyed[j]:
+#                    if dist(p[i],p[j]) == 0:
+#                        to_destroy[i] = True
+#                        to_destroy[j] = True
+#    return to_destroy
+#
+#T = 100
+#for t in range(T):
+#    tick()
+#    for i in collisions():
+#        destroyed[i] = True
+#    print(sum(1 for x in destroyed if not x))
