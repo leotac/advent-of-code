@@ -13,7 +13,6 @@ DIGITS = [
         set("abcdefg"),
         set("abcdfg"),
 ]
-
 S = "abcdefg"
 
 def is_feasible(z, sol):
