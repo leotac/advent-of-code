@@ -1,7 +1,8 @@
 from itertools import permutations
 from tqdm import tqdm
 
-numbers = [set("abcefg"),
+DIGITS = [
+        set("abcefg"),
         set("cf"),
         set("acdeg"),
         set("acdfg"),
@@ -13,21 +14,22 @@ numbers = [set("abcefg"),
         set("abcdfg"),
 ]
 
+S = "abcdefg"
+
 def is_feasible(z, sol):
     for d in z:
-        if set(sol[x] for x in d) not in numbers:
+        if set(sol[x] for x in d) not in DIGITS:
             return False
     return True
 
 def bruteforce(z):
-    s = "abcdefg"
-    for p in permutations(s):
-        sol = dict(zip(p,s))
+    for p in permutations(S):
+        sol = dict(zip(p,S))
         if is_feasible(z, sol):
             return sol
 
 def to_digit(s):
-    return str(numbers.index(set(s)))
+    return str(DIGITS.index(set(s)))
 
 def decode(x,y):
     sol = bruteforce(x + y)
@@ -37,11 +39,11 @@ def main(filename):
     total = 0
     for i,l in enumerate(tqdm(open(filename), total=200)):
         s = l.strip().split()
-        decoded_output = decode(s[:10], s[-4:])
-        total += int("".join(decoded_output))
+        decoded = decode(s[:10], s[-4:])
+        total += int("".join(decoded))
     return total
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
     ret = main(filename)
-    print(f"{ret=}") #14:03 
+    print(f"{ret=}") 
