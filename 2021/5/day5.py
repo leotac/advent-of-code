@@ -1,5 +1,11 @@
 import numpy as np
 
+def plot(a):
+    from matplotlib import pyplot as plt
+    plt.imshow(a)
+    plt.axis('off')
+    plt.savefig("day5.png", bbox_inches='tight', pad_inches=0)
+
 def main(filename):
     a = np.zeros((1000, 1000), dtype=int)
     for l in open(filename):
@@ -15,6 +21,7 @@ def main(filename):
             y_step = 1 if y1 <= y2 else -1
             a[range(x1, x2 + x_step, x_step), range(y1, y2 + y_step, y_step)] += 1
 
+    plot(a)    
     return np.sum(a > 1)
 
 

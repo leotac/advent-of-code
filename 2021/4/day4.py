@@ -23,7 +23,7 @@ def main(filename):
         b, _ = np.where(mask.sum(axis = 2) == 5)
         new = (set(a) | set(b)) - won
         won |= new
-        
+       
         #if len(won) == 1: #first 
         if len(won) == num_boards: #last
             idx = list(new)[0]
@@ -33,7 +33,6 @@ def main(filename):
     winning_mask = mask[idx]
     score = n*sum(winning_board[~winning_mask])
     return score
-
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
