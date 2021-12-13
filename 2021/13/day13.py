@@ -1,15 +1,15 @@
 import numpy as np
 
 def plot(X):
-    for r in np.where(X.T,"#"," "):
-        print("".join(r))
+    for r in np.where(X.T,'█',' '):
+        print(''.join(r))
 
 def fold(X, idx, dim):
     assert X.shape[dim] // 2 == idx
     if dim == 0:
-        return (X[:idx,:] + X[:idx:-1,:])
+        return X[:idx,:] | X[:idx:-1,:]
     else:
-        return (X[:,:idx] + X[:,:idx:-1])
+        return X[:,:idx] | X[:,:idx:-1]
 
 def main(filename):
     coords = np.array([[int(x) for x in l.strip().split(',')] for l in open(filename) if ',' in l])
@@ -20,7 +20,7 @@ def main(filename):
     X[coords[:,0], coords[:,1]] = 1
     
     for i,f in enumerate(folds):
-        dim, idx = f.split("=")
+        dim, idx = f.split('=')
         X = fold(X, int(idx), 0 if dim=='x' else 1)
         if i == 0: print(X.sum())
     plot(X)

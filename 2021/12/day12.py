@@ -9,10 +9,10 @@ def explore(cur, visited, exceptions, path):
         if VERBOSE: print(visited, path)
         return 1
  
-    paths = sum(explore(n, visited | {n}, exceptions, path+[n]) for n in G[cur] 
-            if (big(n) or (n not in path)) and n != "start" )
+    paths = sum(explore(n, visited | {n}, exceptions, path+[n]) for n in G[cur]
+            if (big(n) or (n not in path)) and n != "start")
     if exceptions > 0:
-        paths += sum( explore(n, visited, exceptions-1, path+[n]) for n in G[cur]
+        paths += sum(explore(n, visited, exceptions-1, path+[n]) for n in G[cur]
                 if not big(n) and (n in visited) and n != "start")
     return paths
 
