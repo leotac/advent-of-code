@@ -6,14 +6,14 @@ def parse(filename):
     rules = {l.split()[0]: l.split()[2].strip() for l in lines[2:]}
     return s, rules
 
-def part1(filename, N):
+def part1(filename, N): # naive
     s, rules = parse(filename)
     for i in range(N):
         s = [c for p in zip(s[:-1],s[1:]) for c in (p[0],rules.get(''.join(p),''))] + list(s[-1])
     c = Counter(s).most_common()
     return c[0][1] - c[-1][1] 
 
-def part2(filename, N):
+def part2(filename, N): # smarter
     s, rules = parse(filename)
     
     counts = defaultdict(int)
@@ -23,10 +23,12 @@ def part2(filename, N):
     for i in range(N):
         oldcounts = counts.copy()
         counts = defaultdict(int)
-        for r,v in rules.items():
-            if oldcounts[r] > 0:
-                counts[r[0]+v] += oldcounts[r]
-                counts[v+r[1]] += oldcounts[r]
+        for r,c in oldcounts.items():
+            if r in rules:
+                counts[r[0]+rules[r]] += c
+                counts[rules[r] + r[1]] += c
+            else:
+                counts[r] += c
 
     letter_counts = defaultdict(int)
     for p,v in counts.items():
