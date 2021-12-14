@@ -21,14 +21,11 @@ def part2(filename, N): # smarter
         counts["".join(p)] += 1
 
     for i in range(N):
-        oldcounts = counts.copy()
-        counts = defaultdict(int)
-        for r,c in oldcounts.items():
+        for r,c in counts.copy().items():
             if r in rules:
-                counts[r[0]+rules[r]] += c
+                counts[r[0] + rules[r]] += c
                 counts[rules[r] + r[1]] += c
-            else:
-                counts[r] += c
+                counts[r] -= c
 
     letter_counts = defaultdict(int)
     for p,v in counts.items():
