@@ -29,7 +29,7 @@ def main(filename, M=1):
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
-    ret = main(filename, repl=1)
-    print(f"{ret=}") 
-    ret = main(filename, repl=5)
-    print(f"{ret=}") 
+    ret = main(filename, M=1)
+    print(f"{ret}") 
+    ret = main(filename, M=5)
+    print(f"{ret}") 
