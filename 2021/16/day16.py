@@ -1,18 +1,30 @@
 VERBOSE = False
 
+def hex2bin(h):
+    return "".join([f"{int(c,base=16):04b}" for c in h])
+    
+def bin2dec(*x):
+    return int("".join(list(x)),base=2)
+
+OPS = {0: "+",
+        1: "+",
+        2: "m", 
+        3: "M", 
+        5: ">",
+        6: "<",
+        7: "=",
+        }
+
 class Parser:
     def __init__(self):
         self.version = 0
 
     def parse_hex(self, h):
-        print("#######", h)
+        if VERBOSE: print("#######", h)
         self.version = 0
-        ret = self.parse_all(self.hex2bin(h))
+        ret = self.parse_all(hex2bin(h))
         return ret, self.version
     
-    def hex2bin(self, h):
-        return "".join([f"{int(c,base=16):04b}" for c in h])
-
     def parse_all(self, raw):
         tot = ""
         remaining = raw
@@ -30,21 +42,24 @@ class Parser:
                 version = int("".join([v0,v1,v2]),base=2)
                 self.version += version
                 if VERBOSE: print(f"L, {version=}", self.version)
-                lit, remaining = self.literal(rest, prefix="(")
-                return lit, remaining
+                lit, remaining = self.literal(rest)
+                return str(bin2dec(lit))+",", remaining
             case [v0,v1,v2,t0,t1,t2,*rest]:
-                version = int("".join([v0,v1,v2]),base=2)
+                version = bin2dec(v0,v1,v2)
+                optype = bin2dec(t0,t1,t2)
                 self.version += version
                 if VERBOSE: print(f"O, {version=}", self.version)
                 if VERBOSE: print("operator header:", "".join([v0,v1,v2]), "".join([t0,t1,t2]))
                 op, remaining = self.operator(rest)
+                if op:
+                    return OPS[optype]+op, remaining
                 return op, remaining
             case _:
                 if VERBOSE: print("All this can't be parsed:", raw)
                 return "", ""
  
    
-    def literal(self, raw, prefix=""):
+    def literal(self, raw):
         """Parse literal *payload* (not header)"""
         if VERBOSE: print("matching", "".join(list(raw)))
         match list(raw):
@@ -52,12 +67,12 @@ class Parser:
                 lit = "".join(rest[:4])
                 if VERBOSE: print("Intermediate chunk of literal:", lit, ", remaining:", "".join(rest[4:]))
                 lit, remaining = self.literal(rest[4:])
-                return prefix + "".join(rest[:4]) + lit, remaining
+                return "".join(rest[:4]) + lit, remaining
             case ["0", *rest]:
                 lit = "".join(rest[:4])
                 remaining = rest[4:]
                 if VERBOSE: print("Last chunk of literal:", lit, ", remaining:", "".join(remaining))
-                return prefix + lit + ")", remaining
+                return lit, remaining
             case o:
                 print("Literal parsing failed, couldn't match:", o)
                 raise ValueError
@@ -67,12 +82,12 @@ class Parser:
         if VERBOSE: print("matching", "".join(list(raw)))
         match list(raw):
             case ["0", *rest]:
-                if len(rest) < 15:
-                    return "", raw
+                if len(rest) < 15: return "", raw
                 length = int("".join(rest[:15]), base=2)
                 if VERBOSE: print("length [0] (num bits):", length)
                 return "[" + self.parse_all(rest[15:15+length]) + "]", rest[15+length:]
             case ["1", *rest]:
+                if len(rest) < 11: return "", raw
                 subpackets = int("".join(rest[:11]), base=2)
                 if VERBOSE: print("length [1] (num subpackets):", subpackets)
                 remaining = rest[11:]
@@ -81,9 +96,10 @@ class Parser:
                     parsed, remaining = self.parse(remaining)
                     pp += parsed
                 return "[" + pp + "]", remaining
-            case o:
-                print("Operator parsing failed, couldn't match:", o)
-                return "", o
+            case _:
+                if VERBOSE: print("Operator parsing failed, couldn't match:", o)
+                return "", raw
+
 
 p = Parser()
 print(p.parse_hex("D2FE28"), "011111100101")
@@ -95,9 +111,9 @@ print(p.parse_hex("C0015000016115A2E0802F182340"), "exp.version=23")
 print(p.parse_hex("A0016C880162017C3686B18A3D4780"), "exp.version=31")
 
 def main(filename):
-    line = open(filename).read()[0]
+    line = open(filename).read().strip()
     p = Parser()
-    p.parse_hex(line)
+    return p.parse_hex(line)
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
