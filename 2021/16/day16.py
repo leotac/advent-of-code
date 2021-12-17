@@ -6,6 +6,16 @@ def hex2bin(h):
 def bin2dec(*x):
     return int("".join(list(x)),base=2)
 
+from functools import reduce
+
+OPS = {0: sum, 
+        1: lambda *z : reduce(lambda x,y: x*y, z, 1),
+        2: min, 
+        3: max, 
+        5: lambda x,y: int(x > y),
+        6: lambda x,y: int(x < y),
+        7: lambda x,y: int(x == y)
+        }
 OPS = {0: "+",
         1: "+",
         2: "m", 
@@ -29,12 +39,12 @@ class Parser:
         tot = ""
         remaining = raw
         while remaining != "":
-            parsed, remaining = self.parse(remaining)
+            parsed, remaining = self.parse_one(remaining)
             tot += parsed
         return tot
 
-    def parse(self, raw, max_depth=None):
-        """Parse ONE packet (or sub-packet), and what is left.."""
+    def parse_one(self, raw):
+        """Parse ONE packet (or sub-packet), and return what is left.."""
         if VERBOSE: print("PARSING:", "".join(list(raw)), f"({len(raw)})")
         match list(raw):
             case [v0,v1,v2,"1","0","0",*rest]:
@@ -93,7 +103,7 @@ class Parser:
                 remaining = rest[11:]
                 pp = ""
                 for _ in range(subpackets):
-                    parsed, remaining = self.parse(remaining)
+                    parsed, remaining = self.parse_one(remaining)
                     pp += parsed
                 return "[" + pp + "]", remaining
             case _:
