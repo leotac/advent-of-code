@@ -50,18 +50,10 @@ class Operator(Packet):
 
 def parse_hex(h):
     if VERBOSE: print("##########", h)
-    packets = parse_all(hex2bin(h))
-    if VERBOSE: pprint(packets)
-    return packets, sum(p.sum_versions() for p in packets), sum([p.value for p in packets])
-
-def parse_all(raw):
-    """ Returns list of packets parsed in input string 'raw'"""
-    packets = []
-    remaining = raw
-    while remaining:
-        packet, remaining = parse_one(remaining)
-        if packet: packets.append(packet)
-    return packets
+    packet, remaining = parse_one(hex2bin(h))
+    assert all(c=="0" for c in remaining)
+    if VERBOSE: pprint(packet)
+    return packet, packet.sum_versions(), packet.value
 
 def parse_one(raw):
     """Parse ONE packet (or sub-packet), and return what is left."""
@@ -96,7 +88,11 @@ def parse_operator(raw):
         case ["0", *rest]:
             if len(rest) < 15: return [], raw
             length = int("".join(rest[:15]), base=2)
-            subpackets = parse_all(rest[15:15+length]) 
+            subpackets = []
+            remaining = rest[15:15+length]
+            while remaining:
+                packet, remaining = parse_one(remaining)
+                if packet: subpackets.append(packet)
             return subpackets, rest[15+length:]
         case ["1", *rest]:
             if len(rest) < 11: return [], raw
@@ -110,7 +106,7 @@ def parse_operator(raw):
         case _:
             return [], raw
 
-assert parse_hex("D2FE28")[0][0].value == 2021
+assert parse_hex("D2FE28")[0].value == 2021
 assert parse_hex("8A004A801A8002F478")[1] == 16
 assert parse_hex("620080001611562C8802118E34")[1] == 12
 assert parse_hex("C0015000016115A2E0802F182340")[1] == 23
