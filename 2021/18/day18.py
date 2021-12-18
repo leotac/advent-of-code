@@ -1,20 +1,20 @@
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, Optional
 from pprint import pprint, pformat
 
 @dataclass
-class Int:
-    magnitude: int
-
-@dataclass
 class Number:
-    left: Union['Number', 'Int']
-    right: Union['Number', 'Int']
+    left: Union['Number', int]
+    right: Union['Number', int]
+    parent: Optional['Number'] = None
     depth: int = 0
+    
+    def isleave(self):
+        return isinstance(left,int) and isinstance(self.right,int)
 
     @property
-    def magnitude(self):
-        return 3*left.magnitude + 2*left.magnitude
+    def __int__(self):
+        return 3*int(self.left) + 2*int(self.left)
 
     def __add__(self, b):
         #do addition
@@ -23,19 +23,62 @@ class Number:
         #c.reduce()
         return c
 
+    def update(self, depth=0, parent=None):
+        self.depth = depth
+        self.parent = parent
+        if isinstance(self.left, Number):
+            self.left.update(depth + 1, self)
+        if isinstance(self.right, Number):
+            self.right.update(depth + 1, self)
+ 
     def reduce(self):
         pass
 
-    def update(self, depth=0):
-        self.depth = depth
-        if isinstance(self.left, Number):
-            self.left.update(depth + 1)
-        if isinstance(self.right, Number):
-            self.right.update(depth + 1)
-    
+    def explode(self):
+        stack = [self]
+        pre = None
+        while stack:
+            cur = stack.pop()
+            if cur.depth == 4:
+                break
+            if isinstance(cur.right, Number): stack.append(cur.right)
+            if isinstance(cur.left, Number): stack.append(cur.left)
+            pre = cur
+
+        if cur.depth < 4:
+            return
+        
+        l,r = cur.left, cur.right
+        assert isinstance(l, int)
+        assert isinstance(r, int)
+
+        # Finding rightmost value on the *left*
+        if pre:
+            if isinstance(pre.right, int):
+                pre.right += l
+            else:
+                pre.left += l
+
+        # Finding leftmost value on the *right*
+        if stack and (post := stack.pop()):
+            if isinstance(post.left, int):
+                post.left += r
+            else:
+                post.right += r
+
+        if cur is cur.parent.left:
+            cur.parent.left = 0
+        else:
+            cur.parent.right = 0
+
+        #self.bump_left(self.left)
+        #self.bump_right(self.right)
+
+   
 def parse(line):
     p, rest =  _parse(line)
     assert not rest
+    p.update()
     return p
 
 def _parse(line):
@@ -47,11 +90,11 @@ def _parse(line):
         return Number(left=left, right=right), rest[1:]
     else: 
         assert line[1] in (",","]")
-        return Int(int(line[0])), line[1:]
+        return int(line[0]), line[1:]
 
 
 def main(filename):
-    numbers = [parse(l.strip())[0] for l in open(filename)]
+    numbers = [parse(l.strip()) for l in open(filename)]
     pprint(numbers)
     for n in numbers:
         n.update()
