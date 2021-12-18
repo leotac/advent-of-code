@@ -23,6 +23,9 @@ class Number:
         #c.reduce()
         return c
 
+    def __repr__(self):
+        return f"[{self.left},{self.right}]"
+
     def update(self, depth=0, parent=None):
         self.depth = depth
         self.parent = parent
@@ -32,7 +35,8 @@ class Number:
             self.right.update(depth + 1, self)
  
     def reduce(self):
-        pass
+        while self.explode() or self.split():
+            pass
 
     def explode(self):
         stack = [self]
@@ -46,8 +50,9 @@ class Number:
             pre = cur
 
         if cur.depth < 4:
-            return
+            return False
         
+        print("Exploding:", cur)
         l,r = cur.left, cur.right
         assert isinstance(l, int)
         assert isinstance(r, int)
@@ -71,10 +76,18 @@ class Number:
         else:
             cur.parent.right = 0
 
-        #self.bump_left(self.left)
-        #self.bump_right(self.right)
+        self.update()
+        return True
 
-   
+    def __iter__(self):
+        stack = [self]
+        while stack:
+            cur = stack.pop()
+            yield cur
+            if isinstance(cur.right, Number): stack.append(cur.right)
+            if isinstance(cur.left, Number): stack.append(cur.left)
+
+
 def parse(line):
     p, rest =  _parse(line)
     assert not rest
