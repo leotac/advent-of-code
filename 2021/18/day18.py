@@ -1,6 +1,23 @@
 from dataclasses import dataclass
 from typing import Union, Optional
-from pprint import pprint, pformat
+from colorama import Fore, Style
+from copy import deepcopy
+
+VERBOSE=False
+
+@dataclass
+class Int:
+    magnitude: int
+    parent: Optional['Number'] = None
+
+    def __int__(self):
+        return self.magnitude
+    def __repr__(self):
+        if self.magnitude >= 10:
+            return Fore.RED + f"{self.magnitude}" + Fore.RESET
+        return f"{self.magnitude}"
+    def update(self, depth=0, parent=None):
+        self.parent = parent
 
 @dataclass
 class Number:
@@ -9,83 +26,91 @@ class Number:
     parent: Optional['Number'] = None
     depth: int = 0
     
-    def isleave(self):
-        return isinstance(left,int) and isinstance(self.right,int)
-
-    @property
     def __int__(self):
-        return 3*int(self.left) + 2*int(self.left)
+        return 3*int(self.left) + 2*int(self.right)
 
     def __add__(self, b):
-        #do addition
-        c = Number(left=self, right=b)
+        c = deepcopy(Number(left=self, right=b))
         c.update()
-        #c.reduce()
+        c.reduce()
         return c
 
     def __repr__(self):
+        if self.depth >= 4:
+            return Style.BRIGHT + f"[{self.left},{self.right}]" + Style.RESET_ALL
         return f"[{self.left},{self.right}]"
 
     def update(self, depth=0, parent=None):
         self.depth = depth
         self.parent = parent
-        if isinstance(self.left, Number):
-            self.left.update(depth + 1, self)
-        if isinstance(self.right, Number):
-            self.right.update(depth + 1, self)
+        self.left.update(depth + 1, self)
+        self.right.update(depth + 1, self)
  
     def reduce(self):
+        if VERBOSE: print(">", self)
         while self.explode() or self.split():
-            pass
+            self.update()
+            if VERBOSE: print(">", self)
 
     def explode(self):
-        stack = [self]
         pre = None
-        while stack:
-            cur = stack.pop()
-            if cur.depth == 4:
+        it = iter(self)
+        for cur in it:
+            if isinstance(cur, Number) and cur.depth == 4:
                 break
-            if isinstance(cur.right, Number): stack.append(cur.right)
-            if isinstance(cur.left, Number): stack.append(cur.left)
-            pre = cur
+            if isinstance(cur, Int):
+                # save previous leaf encountered
+                pre = cur
 
-        if cur.depth < 4:
+        if isinstance(cur,Int) or cur.depth < 4:
             return False
         
-        print("Exploding:", cur)
-        l,r = cur.left, cur.right
-        assert isinstance(l, int)
-        assert isinstance(r, int)
+        l,r = next(it), next(it)
+        assert isinstance(l, Int)
+        assert isinstance(r, Int)
 
-        # Finding rightmost value on the *left*
+        if VERBOSE: print("Exploding", cur)
+        # Finding rightmost leaf value on the *left*, if any
         if pre:
-            if isinstance(pre.right, int):
-                pre.right += l
-            else:
-                pre.left += l
+            assert isinstance(pre, Int)
+            pre.magnitude += int(l)
 
-        # Finding leftmost value on the *right*
-        if stack and (post := stack.pop()):
-            if isinstance(post.left, int):
-                post.left += r
-            else:
-                post.right += r
+        # Finding leftmost leaf value on the *right*, if any
+        try:
+            while not isinstance(post := next(it), Int):
+                pass
+            assert isinstance(post, Int)
+            post.magnitude += int(r)
+        except StopIteration:
+            pass
 
         if cur is cur.parent.left:
-            cur.parent.left = 0
+            cur.parent.left = Int(0)
         else:
-            cur.parent.right = 0
-
-        self.update()
+            cur.parent.right = Int(0)
         return True
+
+    def split(self):
+        for cur in self:
+            if isinstance(cur, Int) and (v := int(cur)) >= 10:
+                if VERBOSE: print("Splitting on", cur, "with parent:", cur.parent)
+                if cur is cur.parent.left:
+                    cur.parent.left = Number(left=Int(v//2), right=Int(v//2 + v%2))
+                elif cur is cur.parent.right:
+                    cur.parent.right = Number(left=Int(v//2), right=Int(v//2 + v%2))
+                else:
+                    raise ValueError
+                return True
+        return False
 
     def __iter__(self):
         stack = [self]
         while stack:
             cur = stack.pop()
             yield cur
-            if isinstance(cur.right, Number): stack.append(cur.right)
-            if isinstance(cur.left, Number): stack.append(cur.left)
+            if isinstance(cur, Number):
+                stack.append(cur.right)
+                stack.append(cur.left)
 
 
 def parse(line):
@@ -103,17 +128,18 @@ def _parse(line):
         return Number(left=left, right=right), rest[1:]
     else: 
         assert line[1] in (",","]")
-        return int(line[0]), line[1:]
+        return Int(int(line[0])), line[1:]
 
 
 def main(filename):
     numbers = [parse(l.strip()) for l in open(filename)]
-    pprint(numbers)
-    for n in numbers:
-        n.update()
-        pprint(n)
-    #sum(numbers)
-            
+    a = numbers[0]
+    for b in numbers[1:]:
+        a += b
+    first = int(a)
+    second1 = max(int(numbers[i] + numbers[j]) for i in range(len(numbers)) for j in range(i+1,len(numbers)))
+    second2 = max(int(numbers[j] + numbers[i]) for i in range(len(numbers)) for j in range(i+1,len(numbers)))
+    return first, second1, second2
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
