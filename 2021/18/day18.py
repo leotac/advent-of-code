@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Union, Optional
 from colorama import Fore, Style
 from copy import deepcopy
+from functools import reduce
 
 VERBOSE=False
 
@@ -21,11 +22,16 @@ class Int:
 
 @dataclass
 class Number:
-    left: Union['Number', int]
-    right: Union['Number', int]
+    left: Union['Number', 'Int']
+    right: Union['Number', 'Int']
     parent: Optional['Number'] = None
     depth: int = 0
-    
+
+    def __repr__(self):
+        if self.depth >= 4:
+            return Style.BRIGHT + f"[{self.left},{self.right}]" + Style.RESET_ALL
+        return f"[{self.left},{self.right}]"
+
     def __int__(self):
         return 3*int(self.left) + 2*int(self.right)
 
@@ -35,17 +41,21 @@ class Number:
         c.reduce()
         return c
 
-    def __repr__(self):
-        if self.depth >= 4:
-            return Style.BRIGHT + f"[{self.left},{self.right}]" + Style.RESET_ALL
-        return f"[{self.left},{self.right}]"
+    def __iter__(self):
+        stack = [self]
+        while stack:
+            cur = stack.pop()
+            yield cur
+            if isinstance(cur, Number):
+                stack.append(cur.right)
+                stack.append(cur.left)
 
     def update(self, depth=0, parent=None):
         self.depth = depth
         self.parent = parent
         self.left.update(depth + 1, self)
         self.right.update(depth + 1, self)
- 
+
     def reduce(self):
         if VERBOSE: print(">", self)
         while self.explode() or self.split():
@@ -64,7 +74,7 @@ class Number:
 
         if isinstance(cur,Int) or cur.depth < 4:
             return False
-        
+
         l,r = next(it), next(it)
         assert isinstance(l, Int)
         assert isinstance(r, Int)
@@ -98,20 +108,8 @@ class Number:
                     cur.parent.left = Number(left=Int(v//2), right=Int(v//2 + v%2))
                 elif cur is cur.parent.right:
                     cur.parent.right = Number(left=Int(v//2), right=Int(v//2 + v%2))
-                else:
-                    raise ValueError
                 return True
         return False
-
-    def __iter__(self):
-        stack = [self]
-        while stack:
-            cur = stack.pop()
-            yield cur
-            if isinstance(cur, Number):
-                stack.append(cur.right)
-                stack.append(cur.left)
-
 
 def parse(line):
     p, rest =  _parse(line)
@@ -126,22 +124,18 @@ def _parse(line):
         right, rest = _parse(rest[1:])
         assert rest[0] == "]"
         return Number(left=left, right=right), rest[1:]
-    else: 
+    else:
         assert line[1] in (",","]")
         return Int(int(line[0])), line[1:]
 
-
 def main(filename):
     numbers = [parse(l.strip()) for l in open(filename)]
-    a = numbers[0]
-    for b in numbers[1:]:
-        a += b
-    first = int(a)
+    first = reduce(lambda x,y: x+y, numbers)
     second1 = max(int(numbers[i] + numbers[j]) for i in range(len(numbers)) for j in range(i+1,len(numbers)))
     second2 = max(int(numbers[j] + numbers[i]) for i in range(len(numbers)) for j in range(i+1,len(numbers)))
-    return first, second1, second2
+    return int(first), max(second1, second2)
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
     ret = main(filename)
-    print(f"{ret=}") 
+    print(f"{ret=}")
