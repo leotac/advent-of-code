@@ -88,16 +88,19 @@ def match_and_align(report0, report1):
     return report1_aligned, scanner1
 
 def draw(report, beacons=[]):
-    from matplotlib import pyplot as plt
-    fig, ax = plt.subplots()
+    #fig, ax = plt.subplots(projection='3d')
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
     for r in beacons:
-        plt.scatter(r[:,0], r[:,1], color="gray", s=2)
+        ax.scatter(r[:,0], r[:,1], r[:,2], color="gray", s=2)
     beacons.append(report)
-    plt.scatter(report[:,0], report[:,1], color="yellow", s=2)
+    ax.scatter(report[:,0], report[:,1], report[:,2], color="yellow", s=2)
     ax.set_xlim(-5000, 1000)
-    ax.set_ylim(-4000, 4000)
+    ax.set_ylim(-3500, 3500)
+    ax.set_zlim(-7000, 2500)
     plt.axis("off")
-    fig.patch.set_facecolor('black')
+    fig.set_facecolor('black')
+    ax.set_facecolor('black') 
     t = len(beacons)
     plt.savefig(f"img/{t:03d}.png", bbox_inches='tight', pad_inches=0) 
     plt.close()
