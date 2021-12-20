@@ -1,6 +1,8 @@
 import numpy as np
 from itertools import permutations, product
 
+VERBOSE=False
+
 def parse(filename):
     reports = []
     for l in open(filename):
@@ -20,21 +22,22 @@ def align(reports):
     aligned_reports = {0: reports[0]} # readings in canonical coordinates (i.e., scanner 0)
     unprocessed = [0]   # stack of reports in canonical coordinates that
                         # have been aligned but haven't been used yet to find matches
-
+    
     while len(aligned_reports) < len(reports):
         i = unprocessed.pop()
         for j in range(len(reports)):
             if j not in aligned_reports:
                 aligned_report, scanner = match_and_align(aligned_reports[i], reports[j])
                 if aligned_report is not None:
-                    print(f"Found alignment between reports {i} and {j}")
+                    if VERBOSE: print(f"Found alignment between reports {i} and {j}")
                     aligned_reports[j] = aligned_report
                     scanners[j] = scanner
                     unprocessed.append(j)
+                    draw(aligned_report)
 
     stacked = np.vstack(list(aligned_reports.values()))
     beacons = np.array(sorted(set(tuple(r) for r in stacked)))
-    return beacons, scanners 
+    return beacons, scanners
 
 def manhattan(scanners):
     return max([np.abs(u-v).sum() for i,u in scanners.items() for j,v in scanners.items()])
@@ -56,7 +59,7 @@ def match_and_align(report0, report1):
         for i in clique1:
             D1 = set(np.linalg.norm(report1[i]-report1[j]) for j in clique1)
             if D1 == D:
-                print(f"Found beacon match: {idx} (report in 0-coord) => {i} (other reportn)")
+                if VERBOSE: print(f"Found beacon match: {idx} (report in 0-coord) => {i} (other reportn)")
                 corr.append((idx,i))
                 break
 
@@ -83,6 +86,15 @@ def match_and_align(report0, report1):
     report1_reoriented = np.array([r[p,]*s for r in report1])
     report1_aligned = report1_reoriented + scanner1
     return report1_aligned, scanner1
+
+from drawille import Canvas
+import os, time
+def draw(report, c=Canvas()):
+    os.system("clear")
+    for x in report:
+        c.set(int(x[0]/100),int(x[1]/100))
+    print(c.frame(min_x=-50,max_x=50,min_y=-50,max_y=50))
+    time.sleep(0.5)
 
 def main(filename):
     reports = parse(filename)
