@@ -87,14 +87,21 @@ def match_and_align(report0, report1):
     report1_aligned = report1_reoriented + scanner1
     return report1_aligned, scanner1
 
-from drawille import Canvas
-import os, time
-def draw(report, c=Canvas()):
-    os.system("clear")
-    for x in report:
-        c.set(int(x[0]/100),int(x[1]/100))
-    print(c.frame(min_x=-50,max_x=50,min_y=-50,max_y=50))
-    time.sleep(0.5)
+def draw(report, beacons=[]):
+    from matplotlib import pyplot as plt
+    fig, ax = plt.subplots()
+    for r in beacons:
+        plt.scatter(r[:,0], r[:,1], color="gray", s=2)
+    beacons.append(report)
+    plt.scatter(report[:,0], report[:,1], color="yellow", s=2)
+    ax.set_xlim(-5000, 1000)
+    ax.set_ylim(-4000, 4000)
+    plt.axis("off")
+    fig.patch.set_facecolor('black')
+    t = len(beacons)
+    plt.savefig(f"img/{t:03d}.png", bbox_inches='tight', pad_inches=0) 
+    plt.close()
+    plt.cla()
 
 def main(filename):
     reports = parse(filename)
