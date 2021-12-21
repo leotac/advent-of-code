@@ -28,6 +28,7 @@ def enhance(pixels, algorithm,background):
     return newpixels
 
 def draw(pixels):
+    import os
     from drawille import Canvas
     c = Canvas()
     range_i, range_j = compute_ranges(pixels)
@@ -35,19 +36,24 @@ def draw(pixels):
         for j in range_j:
             if (i,j) in pixels:
                 c.set(i,j)
+    os.system("clear")
     print(c.frame())
 
 def main(filename, n=2):
     lines = open(filename).readlines()
     algorithm = lines[0]
     pixels = set((i,j) for i,l in enumerate(lines[2:]) for j,c in enumerate(l) if c=="#")
-    draw(pixels)
-    for i in range(50):
-        pixels = enhance(pixels, algorithm, background="0" if i%2==0 else "1")
-        draw(pixels)
+    if VERBOSE: draw(pixels)
+    for i in range(n):
+        background = "0" if (algorithm[0] == "." or i%2 == 0) else "1"
+        pixels = enhance(pixels, algorithm, background)
+        if VERBOSE: draw(pixels)
     return len(pixels)
 
 if __name__ == "__main__":
+    VERBOSE = False
     filename = __file__.replace(".py", ".inp")
-    ret = main(filename)
-    print(f"{ret=}") 
+    ret = main(filename, n=2)
+    print(f"{ret}") 
+    ret = main(filename, n=50)
+    print(f"{ret}") 
