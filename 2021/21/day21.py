@@ -10,7 +10,7 @@ def die(sides=100, deterministic=True):
         for i,n in enumerate(cycle(range(1, sides+1))):
             yield n, i+1
 
-def first(p0, p1, die_sides):
+def deterministic(p0, p1, die_sides):
     positions = [p0, p1]
     scores = [0, 0]
     roll = die(sides=die_sides, deterministic=True)
@@ -24,7 +24,7 @@ def first(p0, p1, die_sides):
                 return min(scores)*num_rolls
 
 @lru_cache(maxsize=21*21*10*10*6)
-def quantum_dice(score1, score2, pos1, pos2, num_roll):
+def quantum(score1, score2, pos1, pos2, num_roll):
     if score1 >= 21:
         return np.array([1, 0])
     
@@ -37,7 +37,7 @@ def quantum_dice(score1, score2, pos1, pos2, num_roll):
             p, s = move(pos1, d), score1
             if num_roll == 2:
                 s += p
-            wins += quantum_wins(s, score2, p, pos2, (num_roll + 1) % 6)
+            wins += quantum(s, score2, p, pos2, (num_roll + 1) % 6)
         return wins
     elif num_roll >= 3:# player 2's turn
         wins = np.array([0,0])
@@ -45,11 +45,13 @@ def quantum_dice(score1, score2, pos1, pos2, num_roll):
             p, s = move(pos2, d), score2
             if num_roll == 5:
                 s += p
-            wins += quantum_wins(score1, s, pos1, p, (num_roll + 1) % 6) 
+            wins += quantum(score1, s, pos1, p, (num_roll + 1) % 6) 
         return wins
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
-    ret = first(10, 7, 100)
-    print(f"{ret=}") 
+    ret = deterministic(10, 7, 100)
+    print(f"{ret}") 
+    ret = quantum(0, 0, 10, 7, 0)[0]
+    print(f"{ret}") 
 
