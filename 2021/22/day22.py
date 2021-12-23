@@ -12,11 +12,13 @@ class Block:
     def volume(self):
         return self.sign*(self.x[1] - self.x[0] + 1)*(self.y[1] - self.y[0] + 1)*(self.z[1] - self.z[0] + 1)
 
+# Doing some creative arithmetic with "negative" blocks of cube
 def apply(action, blocks):
     newblocks = []
     if action[0] == "on":
         newblocks.append(Block(x=(action[1],action[2]), y=(action[3],action[4]), z=(action[5],action[6]), sign=1))
 
+    # Blocks generated as a side-effect of the overlaps
     for b in blocks:
         if (o := overlap(action, b)) is not None:
             newblocks.append(o)
@@ -31,7 +33,7 @@ def overlap(action, b:Block):
     if x[0] > x[1] or y[0] > y[1] or z[0] > z[1]:
         return None
 
-    return Block(x=x, y=y, z=z, sign=-b.sign)#
+    return Block(x=x, y=y, z=z, sign=-b.sign)
 
 def reboot(actions):
     blocks = []
