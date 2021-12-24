@@ -53,6 +53,34 @@ def main(filename):
     second = reboot(steps)
     return first, second
 
+def cubes(b:Block, step=4):
+    from itertools import product
+    return product(range(b.x[0],b.x[1]+1,step),range(b.z[0],b.z[1]+1,step),range(b.z[0],b.z[1]+1,step))
+
+def draw(t, actions):
+    import numpy as np
+    from matplotlib import pyplot as plt
+    points = set()
+    for action in actions:
+        if action[0] == "on":
+            block = Block(x=(action[1],action[2]), y=(action[3],action[4]), z=(action[5],action[6]), sign=1)
+            points |= set(cubes(block))
+        else:
+            block = Block(x=(action[1],action[2]), y=(action[3],action[4]), z=(action[5],action[6]), sign=1)
+            points -= set(cubes(block))
+    print("Plotting", len(points), "points") 
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    X = np.array(list(points))
+    ax.scatter(X[:,0], X[:,1], X[:,2], color="yellow", s=0.05)
+
+    plt.axis("off")
+    fig.set_facecolor('black')
+    ax.set_facecolor('black') 
+    plt.savefig(f"img/{t:03d}.png", bbox_inches='tight', pad_inches=0) 
+    plt.close()
+    plt.cla()
+
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
     ret = main(filename)
