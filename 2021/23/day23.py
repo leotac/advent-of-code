@@ -14,7 +14,6 @@ PODROOM = {"A":2, "B":4, "C":6, "D":8}
 PODCOST = {"A": 1,"B":10,"C":100,"D":1000}
 
 def compute_path(u,v):
-    assert valid(u) and valid(v)
     if u == v:
         return None
     if u[0] == v[0] == 0: #both hallways not a valid move
@@ -107,12 +106,13 @@ def search(amphipods, maxit=10000):
     best = 99999
     it = 0
     for it in trange(maxit):
+        if len(stack) == 0:
+            return best
         i,s = min(enumerate(stack), key=lambda x: x[1].estimated)
         del stack[i]
         if s.estimated > best:
             print(f"Best: {best}, most promising: {s.estimated}")
-            # can no longer improve!
-            break
+            return best
         for u,pod in s.positions.items():
             for end, path in PATHS[u].items():
                 if s.isvalid(path):
@@ -129,16 +129,19 @@ def search(amphipods, maxit=10000):
                         stack = [x for x in stack if x.estimated < best]
                     if s.estimated < best:
                         stack.append(newstate)
-    return stack
 
 def parse(filename):
     s = {}
     c = [list(l.strip()) for l in open(filename)]
-    for i in range(3):
+    for i in range(len(c)):
         for j in range(11):
             if c[i][j] in "ABCD":
                 s[i,j] = c[i][j]
     return s
+
+def main(filename):
+    amphipods = parse(filename)
+    return search(amphipods)
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
