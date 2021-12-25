@@ -4,9 +4,10 @@ import numpy as np
 from copy import deepcopy
 from collections import defaultdict
 from tqdm import trange
-
-BURROW = [list(l) for l in ['...........', '##.#.#.#.##', '##.#.#.#.##']]
-ROOMS = set([(1,2),(2,2),(1,4),(2,4),(1,6),(2,6),(1,8),(2,8)])
+from itertools import permutations
+DEPTH = 2
+BURROW = [list(l) for l in ['...........'] + ['##.#.#.#.##']*DEPTH]
+ROOMS = set([(i,room) for i in range(1,DEPTH+1) for room in (2,4,6,8)])
 HALLWAY = set([(0,t) for t in range(11)])
 VALIDHALLWAY = HALLWAY - {(0,2),(0,4),(0,6),(0,8)} 
 PODS = {"A","B","C","D"}
@@ -21,16 +22,12 @@ def compute_path(u,v):
 
     if u[0] == 0: #from hallway to room
         sign = int(v[1] > u[1]) or -1
-        path = [(0,t) for t in range(u[1], v[1] + sign, sign)] + [(1,v[1])]
-        if v[0] == 2:
-            path += [(2,v[1])]
+        path = [(0,t) for t in range(u[1], v[1] + sign, sign)]
+        path += [(t,v[1]) for t in range(1, v[0]+1)]
         return path
 
     if v[0] == 0: #from room to hallway
-        if u[0] == 1:
-            path = [(1,u[1])]
-        elif u[0] == 2:
-            path = [(2,u[1]), (1,u[1])]
+        path = [(t,u[1]) for t in range(u[0], 0, -1)]
         sign = int(v[1] > u[1]) or -1
         path += [(0,t) for t in range(u[1], v[1] + sign, sign)]
         return path       
@@ -53,7 +50,6 @@ def getcost(u,v,pod):
         return PODCOST[pod]*abs(u[1]-v[1])
     return PODCOST[pod]*(len(PATHS[u][v]) - 1) 
 
-
 class State:
 
     def __init__(self, positions, cost, parent):
@@ -66,9 +62,10 @@ class State:
         pods = defaultdict(list)
         for u, pod in positions.items(): 
             pods[pod].append(u)
-        for c, (a,b) in pods.items():
+        for c, items in pods.items():
             room = PODROOM[c]
-            self.estimated += min(getcost(a,(1,room),c) + getcost(b,(2,room),c), getcost(a,(2,room),c) + getcost(b,(1,room),c))
+            # try all possible combinations to estimate cost..
+            self.estimated += min([sum(getcost(items[i],(p[i],room),c) for i in range(DEPTH)) for p in permutations(range(1,DEPTH+1))])
 
     def isvalid(self, path):
         for u in path[1:]:
@@ -79,8 +76,8 @@ class State:
         if end in ROOMS:
             if end[1] != PODROOM[pod]:
                 return False
-            if end[0] == 1: #then in 2 there must be another pod of the same race
-                if self.positions.get((2,end[1]), None) != pod:
+            if end[0] < DEPTH: #then all those below must be pods of the same race
+                if not all((self.positions.get((i,end[1]), None) == pod) for i in range(end[0]+1,DEPTH+1)):
                     return False
         return True
 
