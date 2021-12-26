@@ -120,9 +120,27 @@ def search(amphipods, maxit=100000):
                         print(f"Found solution with cost {newstate.cost} after {it} iterations")
                         best = (newstate.cost, newstate)
                     if newstate.estimated < best[0] and newstate.cost < visited.get(str(newstate), 9999999): 
-                        # estimate must be better than current best and state must be new or reached in fewer steps
+                        # estimate must be better than current best and
+                        # state must be new or reached in fewer steps (avoid cycles)
                         stack[newstate] = newstate.estimated
                         visited[str(newstate)] = newstate.cost
+
+def draw(s, filename):
+    from matplotlib import pyplot as plt
+    import numpy as np
+    fig, ax = plt.subplots(1, figsize=(4,4))
+    b = np.full((DEPTH+1,11), 0)
+    for p in HALLWAY | ROOMS:
+        b[p] = 10
+    for p,c in s.positions.items():
+        b[p] = PODROOM[c]
+    cmap = defaultdict(int)
+    ax.imshow(b, vmin=0, cmap="nipy_spectral")
+    ax.axis('off')
+    plt.margins(x=0)
+    plt.savefig(filename, bbox_inches='tight', pad_inches=0) 
+    plt.close()
+    plt.cla()
 
 def parse(filename):
     s = {}
