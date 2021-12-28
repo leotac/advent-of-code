@@ -1,3 +1,3 @@
 # Advent of Code
 
-Code for the solutions to the Advent of Code problems.
+Code of my solutions to the Advent of Code problems.
