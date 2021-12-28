@@ -1,13 +1,13 @@
-from tqdm import trange, tqdm
-from itertools import product
+from tqdm import tqdm
 import numpy as np
-from concurrent.futures import ProcessPoolExecutor
 
-class OpTree:
+class Op:
     def __init__(self, line):
         self.op, *self.args = line.split()
         
     def __call__(self, state):
+        """ Apply Op to given input state [and simplify, if possible!]
+        """
         # Ops are always x = x <OP> y
         try: #try to simplify x
             first = eval(state[self.args[0]])
@@ -53,18 +53,17 @@ class OpTree:
             elif isinstance(first, int) and isinstance(second, int):
                 ret = int(first == second)
             else:
-                #ret = f"np.int32({first} == {second})"
-                ret = f"int({first} == {second})"
+                ret = f"np.int32({first} == {second})"
         try:
             state[self.args[0]] = eval(ret)
         except:
             state[self.args[0]] = ret
 
 def parse_blocks(filename):
-
-    program = [OpTree(l.strip()) for l in open(filename)]
+    program = [Op(l.strip()) for l in open(filename)]
     
     definitions = []
+    functions = []
     state = None
     for o in program:
         if o.op == "inp":
@@ -73,59 +72,70 @@ def parse_blocks(filename):
         else:
             o(state)
     definitions.append(state["z"])
-    blocks = []
-    for d in definitions:
-        exec(f"blocks.append(lambda a,b: {d})")
-    return definitions, blocks
+    print("Parsed functions:")
+    for i,d in enumerate(definitions):
+        exec(f"functions.append(lambda a,b: {d})")
+        print(f"> {d}")
+    return functions
 
-def backward_fast(filename, domain=None):
-    defs, fs = parse_blocks(filename)
+def cartesian_product(x, y):
+    return np.transpose([np.tile(x, len(y)), np.repeat(y, len(x))])
+
+def compute_domains(fs):
+    """ Given N sequential functions, compute the z domain for i+1-th function as the image of i-th function. 
+        We start with [0] given that the initial value of z is given, z=0.
+        The last one is not needed.
+    """
+    domain = [[0]]
+    for i,f in enumerate(tqdm(fs[:-1])):
+        X = cartesian_product(list(range(1,10)), list(domain[i]))
+        domain.append(list(set((f(X[:,0],X[:,1])))))
+    return domain
+
+def backward(filename, criterion=min, domain=None):
+    """
+    Backward search
+    Starting rom the last step, what are the valid inputs (pre-image) for which we can obtain the desired output(s)?
+    Then, use those inputs as the desired output of the previous step.
+    """
+    fs = parse_blocks(filename)
    
     if domain is None:
-        domain = [[0]]
-        for i,(f,d) in tqdm(enumerate(zip(fs,defs)), total=14):
-            print(f"{i}: with def: {d}")
-            #X = np.array([(w,z) for w in range(1,10) for z in domain[i]])
-            domain.append(set([f(w,z) for w in range(1,10) for z in tqdm(domain[i])]))
-            #domain.append(set(f(X[:,0],X[:,1])))
-            print(f"Obtained: {len(domain[-1])} distinct output values")
-        
-    assert 0 in domain[14] #domain[14] is the image of block 13
+        print("Computing z domains..")
+        domain = compute_domains(fs)
 
-    good_z = [{0}]
-    good_states = [set((i,0) for i in range(1,10))]
+    good_z = {0}
+    good_states = [] 
     for i in tqdm(reversed(range(14)), total=14):
-        print(f"From input {i} to the next one, using domain {i} ({len(domain[i])})")
-        d = domain[i]
-        if i == 13:
-            d = range(25)
-        candidate_initial_states = list(product(range(1,10), d))
-        print(len(candidate_initial_states))
-        good_initial_states = []
-        for s in tqdm(candidate_initial_states): 
-            z = fs[i](s[0],s[1]) #w,z
-            if z in good_z[i]:
-                good_initial_states.append(s)
-        good_states.append(set(good_initial_states))
-        print("Initial states that lead to good end states:", len(good_initial_states))
-        good_w = set([w[0] for w in good_initial_states])
-        good_z = set([w[1] for w in good_initial_states])
-        print(f"w ({len(good_w)}):", sorted(good_w)[:5] + sorted(good_w)[-5:])
-        print(f"z ({len(good_z)}):", sorted(good_z)[:5] + sorted(good_z)[-5:])
+        candidate_initial_states = cartesian_product(list(range(1,10)), list(domain[i]))
+        print(f"Candidate input states for step {i}:", len(candidate_initial_states))
+        S = np.array(candidate_initial_states)
+        Z = fs[i](S[:,0],S[:,1])
+        
+        # What are the input states that lead to a desired output? (good_z)
+        good_idx = np.in1d(Z, list(good_z))
+        good_states.append(S[good_idx])
+        print("Input states that lead to good end states:", len(good_states[-1]))
+        good_w = set([w[0] for w in good_states[-1]])
+        good_z = set([w[1] for w in good_states[-1]])
+        print(f"w ({len(good_w)}):", sorted(good_w)[:10])
+        print(f"z ({len(good_z)}):", sorted(good_z)[:10])
         print("#"*20)
 
     good_states = reversed(good_states)
     z = 0
-    ws = []
-    for i,f,S in enumerate(zip(fs, reversed(good_states))):
-        w = min(w for (w,zi) in S if zi == z)
-        ws.append(w)
+    W = []
+    for f,S in zip(fs, good_states):
+        w = criterion(w for (w,zi) in S if zi == z)
+        W.append(str(w))
         print(f"Computed: {f(w,z)=} from {w=} and {z=}")
         z = f(w,z)
-    return
-
+    assert z == 0
+    return "".join(W)
 
 if __name__ == "__main__":
     filename = __file__.replace(".py", ".inp")
-    ret = backward_fast(filename)
+    ret = backward(filename, criterion=max)
+    print(f"{ret=}") 
+    ret = backward(filename, criterion=min)
     print(f"{ret=}") 
